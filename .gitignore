@@ -1,0 +1,10 @@
+bin/
+obj/
+temp/
+*.suo
+*.ncb
+*.user
+*.svcinfo
+*.xsd
+*.wsdl
+*.exe

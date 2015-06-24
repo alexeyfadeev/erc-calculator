@@ -105,5 +105,15 @@ namespace RedAlliance.Erc
             }
             UpdateTable();
         }
+
+        private void _btnClear_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Are you sure?", "Clear all data", MessageBoxButton.YesNo);
+            if (result == MessageBoxResult.Yes)
+            {
+                DBContext.ExecuteCommand("DELETE FROM code");
+                UpdateTable();
+            }
+        }
     }
 }

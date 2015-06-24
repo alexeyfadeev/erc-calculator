@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ec="clr-namespace:RedAlliance.Erc"
-        Title="ERC Calculator" Width="375" Height="525">
+        Title="ERC Calculator" Width="375" Height="555">
     <DockPanel Margin="16">
         <StackPanel Height="22" Orientation="Horizontal" DockPanel.Dock="Top">
             <TextBlock Text="Erc: "/>
@@ -13,6 +13,8 @@
         </StackPanel>
         <TextBlock x:Name="_tbOutput" DockPanel.Dock="Top" />
 
+        <Button x:Name="_btnClear" Content="Clear Database" Click="_btnClear_Click" DockPanel.Dock="Bottom" Width="100"/>
+        
         <ItemsControl x:Name="_table">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>

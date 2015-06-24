@@ -92,7 +92,7 @@ namespace RedAlliance.Erc
                 if (code[i] == '*') continue;
                 if (!Check(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1)))
                 {
-                    _tbOutput.Text = "Error.";
+                    _tbOutput.Text = "Error on position: " + (i + 1).ToString();
                     return;
                 }
             }

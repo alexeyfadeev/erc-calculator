@@ -34,15 +34,25 @@ namespace RedAlliance.Erc
             UpdateTable();
         }
 
-        private bool Check(int position, string inputSymbol, string addendum, string result)
+        private void Check(int position, string inputSymbol, string addendum, string result)
         {
             using (var dbContext = GetDataContext())
             {
-                var code = dbContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
-                if (code == null) return true;
-
                 string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
-                return outputSymbol == code.OutputSymbol;
+                var code = dbContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
+                if (code == null)
+                {
+                    var codeNew = new Code() { InputSymbol = inputSymbol, Position = position, OutputSymbol = outputSymbol };
+                    dbContext.Code.InsertOnSubmit(codeNew);
+                    dbContext.SubmitChanges();
+                }
+                else if (!code.OutputSymbol.Contains(outputSymbol))
+                {
+                    code.OutputSymbol += outputSymbol;
+                    dbContext.SubmitChanges();
+                }
+                //string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
+                //return outputSymbol == code.OutputSymbol;
             }
         }
 
@@ -97,19 +107,16 @@ namespace RedAlliance.Erc
             for (int i = 0; i < 8; i++)
             {
                 if (code[i] == '*') continue;
-                if (!Check(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1)))
-                {
-                    _tbOutput.Text = "Error on position: " + (i + 1).ToString();
-                    return;
-                }
+                Check(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
             }
+            /*
             _tbOutput.Text = "OK";
 
             for (int i = 0; i < 8; i++)
             {
                 if (code[i] == '*') continue;
                 Write(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
-            }
+            }*/
             UpdateTable();
         }
 

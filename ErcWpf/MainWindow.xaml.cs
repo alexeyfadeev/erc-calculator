@@ -89,6 +89,7 @@ namespace RedAlliance.Erc
 
             for (int i = 0; i < 8; i++)
             {
+                if (code[i] == '*') continue;
                 if (!Check(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1)))
                 {
                     _tbOutput.Text = "Error.";
@@ -99,6 +100,7 @@ namespace RedAlliance.Erc
 
             for (int i = 0; i < 8; i++)
             {
+                if (code[i] == '*') continue;
                 Write(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
             }
             UpdateTable();

@@ -2,13 +2,13 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ec="clr-namespace:RedAlliance.Erc"
-        Title="ERC Calculator" Height="350" Width="525">
+        Title="ERC Calculator" Width="375" Height="525">
     <DockPanel Margin="16">
         <StackPanel Height="22" Orientation="Horizontal" DockPanel.Dock="Top">
             <TextBlock Text="Erc: "/>
             <TextBox x:Name="_tbErc" Width="120" Text="0073846700738467"/>
             <TextBlock Margin="20,0,0,0" Text="Code: "/>
-            <TextBox x:Name="_tbCode" Width="60" Text="D8514056"/>
+            <TextBox x:Name="_tbCode" Width="65" Text="D8514056"/>
             <Button Margin="20,0,0,0" Content="Check" x:Name="_btnCheck" Click="_btnCheck_Click"/>
         </StackPanel>
         <TextBlock x:Name="_tbOutput" DockPanel.Dock="Top" />

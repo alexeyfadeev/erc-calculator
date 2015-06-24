@@ -11,7 +11,10 @@
             <TextBox x:Name="_tbCode" Width="65" Text="D8514056"/>
             <Button Margin="20,0,0,0" Content="Check" x:Name="_btnCheck" Click="_btnCheck_Click"/>
         </StackPanel>
-        <TextBlock x:Name="_tbOutput" DockPanel.Dock="Top" />
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+            <CheckBox Content="Deny multiple values" IsChecked="True" x:Name="_cbMultiple"/>
+            <TextBlock Margin="20,0,0,0" x:Name="_tbOutput"/>
+        </StackPanel>
 
         <Button x:Name="_btnClear" Content="Clear Database" Click="_btnClear_Click" DockPanel.Dock="Bottom" Width="100"/>
         

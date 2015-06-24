@@ -21,6 +21,14 @@ namespace RedAlliance.Erc
     {
         public ObservableCollection<Code> TableItems { get; set; }
 
+        public bool IsMultipleMode
+        {
+            get
+            {
+                return _cbMultiple.IsChecked != true;
+            }
+        }
+
         public ErcDb GetDataContext()
         {
             return new ErcDb("Data Source=erc_db.sdf;Password=thwerc;DbLinqProvider=SqlCe;DbLinqConnectionType=System.Data.SqlServerCe.SqlCeConnection, System.Data.SqlServerCe");
@@ -34,7 +42,7 @@ namespace RedAlliance.Erc
             UpdateTable();
         }
 
-        private void Check(int position, string inputSymbol, string addendum, string result)
+        private void CheckWriteMultiple(int position, string inputSymbol, string addendum, string result)
         {
             using (var dbContext = GetDataContext())
             {
@@ -51,8 +59,18 @@ namespace RedAlliance.Erc
                     code.OutputSymbol += outputSymbol;
                     dbContext.SubmitChanges();
                 }
-                //string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
-                //return outputSymbol == code.OutputSymbol;
+            }
+        }
+
+        private bool Check(int position, string inputSymbol, string addendum, string result)
+        {
+            using (var dbContext = GetDataContext())
+            {
+                var code = dbContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
+                if (code == null) return true;
+
+                string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
+                return outputSymbol == code.OutputSymbol;
             }
         }
 
@@ -104,19 +122,33 @@ namespace RedAlliance.Erc
             string code = _tbCode.Text;
             if (erc.Length != 16 || code.Length != 8) return;
 
-            for (int i = 0; i < 8; i++)
+            if (IsMultipleMode)
             {
-                if (code[i] == '*') continue;
-                Check(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
+                for (int i = 0; i < 8; i++)
+                {
+                    if (code[i] == '*') continue;
+                    CheckWriteMultiple(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
+                }
             }
-            /*
-            _tbOutput.Text = "OK";
-
-            for (int i = 0; i < 8; i++)
+            else
             {
-                if (code[i] == '*') continue;
-                Write(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
-            }*/
+                for (int i = 0; i < 8; i++)
+                {
+                    if (code[i] == '*') continue;
+                    if (!Check(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1)))
+                    {
+                        _tbOutput.Text = "Error on position: " + (i + 1).ToString();
+                        return;
+                    }
+                }
+                _tbOutput.Text = "OK";
+
+                for (int i = 0; i < 8; i++)
+                {
+                    if (code[i] == '*') continue;
+                    Write(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
+                }
+            }
             UpdateTable();
         }
 

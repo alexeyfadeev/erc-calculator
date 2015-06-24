@@ -19,7 +19,6 @@ namespace RedAlliance.Erc
 {
     public partial class MainWindow : Window
     {
-        public ErcDb DBContext { get; set; }
         public ObservableCollection<Code> TableItems { get; set; }
 
         public ErcDb GetDataContext()
@@ -30,7 +29,6 @@ namespace RedAlliance.Erc
         public MainWindow()
         {
             InitializeComponent();
-            DBContext = GetDataContext();
             TableItems = new ObservableCollection<Code>();
             _table.ItemsSource = TableItems;
             UpdateTable();
@@ -38,11 +36,14 @@ namespace RedAlliance.Erc
 
         private bool Check(int position, string inputSymbol, string addendum, string result)
         {
-            var code = DBContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
-            if (code == null) return true;
+            using (var dbContext = GetDataContext())
+            {
+                var code = dbContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
+                if (code == null) return true;
 
-            string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
-            return outputSymbol == code.OutputSymbol;
+                string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
+                return outputSymbol == code.OutputSymbol;
+            }
         }
 
         private string CalculateOutput(int position, string inputSymbol, string addendum, string result)
@@ -61,22 +62,28 @@ namespace RedAlliance.Erc
 
         private void Write(int position, string inputSymbol, string addendum, string result)
         {
-            var code = DBContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
-            if (code == null)
+            using (var dbContext = GetDataContext())
             {
-                string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
-                
-                var codeNew = new Code() { InputSymbol = inputSymbol, Position = position, OutputSymbol = outputSymbol };
-                DBContext.Code.InsertOnSubmit(codeNew);
-                DBContext.SubmitChanges();
+                var code = dbContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
+                if (code == null)
+                {
+                    string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
+
+                    var codeNew = new Code() { InputSymbol = inputSymbol, Position = position, OutputSymbol = outputSymbol };
+                    dbContext.Code.InsertOnSubmit(codeNew);
+                    dbContext.SubmitChanges();
+                }
             }
         }
 
         private void UpdateTable()
         {
-            TableItems.Clear();
-            DBContext.Code.ToList().ForEach(TableItems.Add);
-            Enumerable.Range(0, 16).ToList().ForEach(x => TableItems.Add(new Code() { InputSymbol = x.ToString("X"), OutputSymbol = x.ToString("X") + "=" }));
+            using (var dbContext = GetDataContext())
+            {
+                TableItems.Clear();
+                dbContext.Code.ToList().ForEach(TableItems.Add);
+                Enumerable.Range(0, 16).ToList().ForEach(x => TableItems.Add(new Code() { InputSymbol = x.ToString("X"), OutputSymbol = x.ToString("X") + "=" }));
+            }
         }
 
         private void _btnCheck_Click(object sender, RoutedEventArgs e)
@@ -111,7 +118,10 @@ namespace RedAlliance.Erc
             var result = MessageBox.Show("Are you sure?", "Clear all data", MessageBoxButton.YesNo);
             if (result == MessageBoxResult.Yes)
             {
-                DBContext.ExecuteCommand("DELETE FROM code");
+                using (var dbContext = GetDataContext())
+                {
+                    dbContext.ExecuteCommand("DELETE FROM code");
+                }
                 UpdateTable();
             }
         }

@@ -164,5 +164,53 @@ namespace RedAlliance.Erc
                 UpdateTable();
             }
         }
+
+        private void _btnEncode_Click(object sender, RoutedEventArgs e)
+        {
+            _tbOutputEnc.Text = "";
+            string erc = _tbErcEnc.Text;
+            if (erc.Length != 16) return;
+
+            string result = "";
+
+            using (var dbContext = GetDataContext())
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    string inputSymbol = new string(erc[15 - i], 1);
+                    string addendum = new string(erc[i], 1);
+                    int position = i + 1;
+                    var code = dbContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
+
+                    if (code == null)
+                    {
+                        result += "*";
+                    }
+                    else
+                    {
+                        int addendumNum = Convert.ToInt32(addendum, 16);
+                        if (code.OutputSymbol.Length > 1)
+                        {
+                            result += "(";
+                        }
+
+                        foreach (char c in code.OutputSymbol)
+                        {
+                            string outputSymbol = new string(c, 1);
+                            int outputSymbolNum = Convert.ToInt32(outputSymbol, 16);
+                            int resultSymbolNum = (addendumNum + outputSymbolNum) % 16;
+
+                            result += resultSymbolNum.ToString("X");
+                        }
+
+                        if (code.OutputSymbol.Length > 1)
+                        {
+                            result += ")";
+                        }
+                    }
+                }
+            }
+            _tbOutputEnc.Text = result;
+        }
     }
 }

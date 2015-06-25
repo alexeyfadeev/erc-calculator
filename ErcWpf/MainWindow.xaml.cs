@@ -70,7 +70,7 @@ namespace RedAlliance.Erc
                 if (code == null) return true;
 
                 string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
-                return outputSymbol == code.OutputSymbol;
+                return code.OutputSymbol.Contains(outputSymbol);
             }
         }
 

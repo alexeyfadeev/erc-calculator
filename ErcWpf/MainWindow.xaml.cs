@@ -21,6 +21,8 @@ namespace RedAlliance.Erc
     {
         public ObservableCollection<Code> TableItems { get; set; }
 
+        private IDictionary<int, int> _dictSpecialPairs = new Dictionary<int, int>() { { 0xA, 4 }, { 2, 6 }, { 1, 0xF } };
+
         public bool IsMultipleMode
         {
             get
@@ -78,11 +80,21 @@ namespace RedAlliance.Erc
         {
             int outputSymbolNum = Convert.ToInt32(result, 16);
             int addendumNum = Convert.ToInt32(addendum, 16);
-            if (outputSymbolNum < addendumNum)
+            int inputSymbolNum = Convert.ToInt32(inputSymbol, 16);
+
+            if (_dictSpecialPairs.ContainsKey(addendumNum) && _dictSpecialPairs[addendumNum] == inputSymbolNum)
             {
-                outputSymbolNum += 16;
+                outputSymbolNum = (outputSymbolNum + addendumNum) % 16;
             }
-            outputSymbolNum -= addendumNum;
+            else
+            {
+                if (outputSymbolNum < addendumNum)
+                {
+                    outputSymbolNum += 16;
+                }
+                outputSymbolNum -= addendumNum;
+            }
+
             string outputSymbol = outputSymbolNum.ToString("X");
 
             return outputSymbol;
@@ -126,6 +138,7 @@ namespace RedAlliance.Erc
             {
                 for (int i = 0; i < 8; i++)
                 {
+                    //if (i >= 2 && i <= 5) continue;
                     if (code[i] == '*') continue;
                     CheckWriteMultiple(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
                 }
@@ -134,6 +147,7 @@ namespace RedAlliance.Erc
             {
                 for (int i = 0; i < 8; i++)
                 {
+                    //if (i >= 2 && i <= 5) continue;
                     if (code[i] == '*') continue;
                     if (!Check(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1)))
                     {
@@ -145,6 +159,7 @@ namespace RedAlliance.Erc
 
                 for (int i = 0; i < 8; i++)
                 {
+                    //if (i >= 2 && i <= 5) continue;
                     if (code[i] == '*') continue;
                     Write(i + 1, new string(erc[15 - i], 1), new string(erc[i], 1), new string(code[i], 1));
                 }
@@ -161,7 +176,34 @@ namespace RedAlliance.Erc
                 {
                     dbContext.ExecuteCommand("DELETE FROM code");
                 }
+                GenerateColumns();
                 UpdateTable();
+            }
+        }
+
+        private void GenerateColumns()
+        {
+            int[] cells = { 0, 8, 4, 0xC, 2, 0xA, 6, 0xE, 1, 9, 5, 0xD, 3, 0xB, 7, 0xF };
+            int?[] constants = { 0xF, 2, null, null, null, null, 0xF, 0xF };
+
+            using (var dbContext = GetDataContext())
+            {
+                for (int i = 0; i < constants.Count(); i++)
+                {
+                    if (!constants[i].HasValue) continue;
+                    for (int j = 0; j < cells.Count(); j++)
+                    {
+                        int outputSymbolNum = (cells[j] + constants[i].Value) % 16;
+                        var code = new Code()
+                        {
+                            InputSymbol = j.ToString("X"),
+                            Position = i + 1,
+                            OutputSymbol = outputSymbolNum.ToString("X")
+                        };
+                        dbContext.Code.InsertOnSubmit(code);
+                    }
+                }
+                dbContext.SubmitChanges();
             }
         }
 
@@ -198,7 +240,21 @@ namespace RedAlliance.Erc
                         {
                             string outputSymbol = new string(c, 1);
                             int outputSymbolNum = Convert.ToInt32(outputSymbol, 16);
-                            int resultSymbolNum = (addendumNum + outputSymbolNum) % 16;
+                            int inputSymbolNum = Convert.ToInt32(inputSymbol, 16);
+                            int resultSymbolNum = 0;
+
+                            if (_dictSpecialPairs.ContainsKey(addendumNum) && _dictSpecialPairs[addendumNum] == inputSymbolNum)
+                            {
+                                resultSymbolNum = outputSymbolNum - addendumNum;
+                                if (resultSymbolNum < 0)
+                                {
+                                    resultSymbolNum += 16;
+                                }
+                            }
+                            else
+                            {
+                                resultSymbolNum = (addendumNum + outputSymbolNum) % 16;
+                            }
 
                             result += resultSymbolNum.ToString("X");
                         }

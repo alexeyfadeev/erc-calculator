@@ -3,14 +3,19 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ec="clr-namespace:RedAlliance.Erc"
         Title="ERC Calculator" Width="380" Height="575">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Lucida Console"/>
+        </Style>
+    </Window.Resources>
     <TabControl>
         <TabItem Header="Code database">
             <DockPanel Margin="16">
                 <StackPanel Height="22" Orientation="Horizontal" DockPanel.Dock="Top">
                     <TextBlock Text="Erc: "/>
-                    <TextBox x:Name="_tbErc" Width="120" Text="0073846700738467"/>
-                    <TextBlock Margin="20,0,0,0" Text="Code: "/>
-                    <TextBox x:Name="_tbCode" Width="65" Text="D8514056"/>
+                    <TextBox x:Name="_tbErc" Width="190" Text="0073846700738467  -  D8514056"/>
+                    <!--TextBlock Margin="20,0,0,0" Text="Code: "/>
+                    <TextBox x:Name="_tbCode" Width="65" Text="D8514056"/-->
                     <Button Margin="20,0,0,0" Content=" Check " x:Name="_btnCheck" Click="_btnCheck_Click"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
@@ -20,7 +25,7 @@
 
                 <Button x:Name="_btnClear" Content="Clear Database" Click="_btnClear_Click" DockPanel.Dock="Bottom" Width="100"/>
 
-                <ItemsControl x:Name="_table">
+                <ItemsControl x:Name="_table" Visibility="Collapsed">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <Grid Background="AliceBlue" ec:GridHelper.RowCount="16" ec:GridHelper.ColumnCount="9" />
@@ -38,6 +43,10 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="_pntBits"/>
+                </ScrollViewer>
             </DockPanel>
         </TabItem>
         <TabItem Header="Encoding">
@@ -47,7 +56,10 @@
                     <TextBox x:Name="_tbErcEnc" Width="120" Text=""/>
                     <Button Margin="20,0,0,0" Content=" Encode " x:Name="_btnEncode" Click="_btnEncode_Click"/>
                 </StackPanel>
-                <TextBlock x:Name="_tbOutputEnc"/>
+                <StackPanel Height="22" Margin="0,8" Orientation="Horizontal" VerticalAlignment="Top">
+                    <TextBlock Text="Unlock: "/>
+                    <TextBox x:Name="_tbOutputEnc" Width="80"/>
+                </StackPanel>
             </StackPanel>            
         </TabItem>
     </TabControl>

@@ -21,7 +21,39 @@ namespace RedAlliance.Erc
     {
         public ObservableCollection<Code> TableItems { get; set; }
 
-        private IDictionary<int, int> _dictSpecialPairs = new Dictionary<int, int>() { { 0xA, 4 }, { 2, 6 }, { 1, 0xF } };
+        private List<KeyValuePair<int, int>> _dictSpecialPairs = new List<KeyValuePair<int, int>>() 
+        { 
+            new KeyValuePair<int, int>(0xA, 4),
+            new KeyValuePair<int, int>(2, 6), 
+            new KeyValuePair<int, int>(1, 0xF),
+            new KeyValuePair<int, int>(2, 5), 
+            new KeyValuePair<int, int>(6, 7), 
+            new KeyValuePair<int, int>(4, 0xB), 
+            new KeyValuePair<int, int>(5, 9), 
+            new KeyValuePair<int, int>(0xD, 9)
+        };
+
+        private List<KeyValuePair<int, int>> _dictBadPairs = new List<KeyValuePair<int, int>>() 
+        { 
+            new KeyValuePair<int, int>(0xA, 7),
+            new KeyValuePair<int, int>(0xC, 1), 
+            new KeyValuePair<int, int>(0, 4),
+            new KeyValuePair<int, int>(5, 3), 
+            new KeyValuePair<int, int>(8, 2), 
+            new KeyValuePair<int, int>(5, 8), 
+            new KeyValuePair<int, int>(5, 4), 
+            new KeyValuePair<int, int>(7, 0xD),
+            new KeyValuePair<int, int>(4, 7),
+            new KeyValuePair<int, int>(7, 4), 
+            new KeyValuePair<int, int>(7, 6),
+            new KeyValuePair<int, int>(0xD, 0xC), 
+            new KeyValuePair<int, int>(5, 6), 
+            new KeyValuePair<int, int>(6, 5), 
+            new KeyValuePair<int, int>(7, 7), 
+            new KeyValuePair<int, int>(0xD, 3),
+            new KeyValuePair<int, int>(0xF, 8), 
+            new KeyValuePair<int, int>(7, 5)
+        };
 
         public bool IsMultipleMode
         {
@@ -49,6 +81,8 @@ namespace RedAlliance.Erc
             using (var dbContext = GetDataContext())
             {
                 string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
+                if (outputSymbol == null) return;
+
                 var code = dbContext.Code.FirstOrDefault(x => x.Position == position && x.InputSymbol == inputSymbol);
                 if (code == null)
                 {
@@ -72,6 +106,8 @@ namespace RedAlliance.Erc
                 if (code == null) return true;
 
                 string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
+                if (outputSymbol == null) return true;
+
                 return code.OutputSymbol.Contains(outputSymbol);
             }
         }
@@ -82,7 +118,9 @@ namespace RedAlliance.Erc
             int addendumNum = Convert.ToInt32(addendum, 16);
             int inputSymbolNum = Convert.ToInt32(inputSymbol, 16);
 
-            if (_dictSpecialPairs.ContainsKey(addendumNum) && _dictSpecialPairs[addendumNum] == inputSymbolNum)
+            if (_dictBadPairs.Any(x => x.Key == addendumNum && x.Value == inputSymbolNum)) return null;
+
+            if (_dictSpecialPairs.Any(x => x.Key == addendumNum && x.Value == inputSymbolNum))
             {
                 outputSymbolNum = (outputSymbolNum + addendumNum) % 16;
             }
@@ -108,6 +146,7 @@ namespace RedAlliance.Erc
                 if (code == null)
                 {
                     string outputSymbol = CalculateOutput(position, inputSymbol, addendum, result);
+                    if (outputSymbol == null) return;
 
                     var codeNew = new Code() { InputSymbol = inputSymbol, Position = position, OutputSymbol = outputSymbol };
                     dbContext.Code.InsertOnSubmit(codeNew);
@@ -126,13 +165,60 @@ namespace RedAlliance.Erc
             }
         }
 
+        string GetFullBinary(string str, int count)
+        {
+            while (str.Length < count)
+            {
+                str = "0" + str;
+            }
+            return str;
+        }
+
+        private void AddBitsRow(int num)
+        {
+            _pntBits.Children.Add(new TextBlock() { Text = GetFullBinary(Convert.ToString(num, 2), 32) + " " + GetFullBinary(num.ToString("X"), 8) });
+        }
+
+        private int GetReverse(int x)
+        {
+            int reverseSecondPart = 0;
+
+            for (int i = 0; i < 32; i++)
+            {
+                int temp = x >> (31 - i);
+                temp &= 1;
+                temp = temp << i;
+                reverseSecondPart |= temp;
+            }
+
+            return reverseSecondPart;
+        }
+
         private void _btnCheck_Click(object sender, RoutedEventArgs e)
         {
             _tbOutput.Text = "";
 
-            string erc = _tbErc.Text;
-            string code = _tbCode.Text;
+            var parts = _tbErc.Text.Split('-');
+            string erc = parts.First().Trim();
+            string code = parts.Last().Trim();
             if (erc.Length != 16 || code.Length != 8) return;
+
+            int firstPart = Convert.ToInt32(erc.Substring(0, 8), 16);
+            int secondPart = Convert.ToInt32(erc.Substring(8), 16);
+            int codeBin = Convert.ToInt32(code, 16);
+
+            int reverseSecondPart = GetReverse(secondPart);
+
+            AddBitsRow(firstPart);
+            AddBitsRow(reverseSecondPart);            
+            int xor = firstPart ^ reverseSecondPart;
+            int result = xor - 0xE010A11;
+            AddBitsRow(xor);
+            AddBitsRow(result);
+            AddBitsRow(codeBin);
+            _pntBits.Children.Add(new TextBlock());
+
+            return;
 
             if (IsMultipleMode)
             {
@@ -184,7 +270,7 @@ namespace RedAlliance.Erc
         private void GenerateColumns()
         {
             int[] cells = { 0, 8, 4, 0xC, 2, 0xA, 6, 0xE, 1, 9, 5, 0xD, 3, 0xB, 7, 0xF };
-            int?[] constants = { 0xF, 2, null, null, null, null, 0xF, 0xF };
+            int?[] constants = { 0xF, 2, 0, null, null, 6, 0xF, 0xF };
 
             using (var dbContext = GetDataContext())
             {
@@ -210,10 +296,22 @@ namespace RedAlliance.Erc
         private void _btnEncode_Click(object sender, RoutedEventArgs e)
         {
             _tbOutputEnc.Text = "";
-            string erc = _tbErcEnc.Text;
+            string erc = _tbErcEnc.Text.Trim();
             if (erc.Length != 16) return;
 
             string result = "";
+
+            int firstPart = Convert.ToInt32(erc.Substring(0, 8), 16);
+            int secondPart = Convert.ToInt32(erc.Substring(8), 16);
+            int reverseSecondPart = GetReverse(secondPart);
+
+            AddBitsRow(firstPart);
+            AddBitsRow(reverseSecondPart);
+            int xor = firstPart ^ reverseSecondPart;
+            int ret = xor - 0xE010A11;
+            _tbOutputEnc.Text = GetFullBinary(ret.ToString("X"), 8);
+
+            return;
 
             using (var dbContext = GetDataContext())
             {
@@ -243,7 +341,7 @@ namespace RedAlliance.Erc
                             int inputSymbolNum = Convert.ToInt32(inputSymbol, 16);
                             int resultSymbolNum = 0;
 
-                            if (_dictSpecialPairs.ContainsKey(addendumNum) && _dictSpecialPairs[addendumNum] == inputSymbolNum)
+                            if (_dictSpecialPairs.Any(x => x.Key == addendumNum && x.Value == inputSymbolNum))
                             {
                                 resultSymbolNum = outputSymbolNum - addendumNum;
                                 if (resultSymbolNum < 0)
